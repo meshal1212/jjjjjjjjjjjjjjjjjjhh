@@ -1,690 +1,95 @@
-const Discord = require('discord.js');
-
-
-
-const Util = require('discord.js');
-
-
-
-const getYoutubeID = require('get-youtube-id');
-
-
-
-const fetchVideoInfo = require('youtube-info');
-
-
-
-const YouTube = require('simple-youtube-api');
-
-
-
-const youtube = new YouTube("AIzaSyAdORXg7UZUo7sePv97JyoDqtQVi3Ll0b8");
-
-
-
-const queue = new Map();
-
-
-
-const ytdl = require('ytdl-core');
-
-
-
-const fs = require('fs');
-
-
-
-const gif = require("gif-search");
-
-
-
-const client = new Discord.Client({disableEveryone: true});
-
-
-
-const prefix = "M";
-
-/////////////////////////
-
-////////////////////////
-
-
-
-client.on('message', async msg =>{
-
-	if (msg.author.bot) return undefined;
-
-    if (!msg.content.startsWith(prefix)) return undefined;
-
-    
-
-    let args = msg.content.split(' ');
-
-
-
-	let command = msg.content.toLowerCase().split(" ")[0];
-
-	command = command.slice(prefix.length)
-
-
-
-    if(command === `ping`) {
-
-    let embed = new Discord.RichEmbed()
-
-    .setColor(3447003)
-
-    .setTitle("Pong!!")
-
-    .setDescription(`${client.ping} ms,`)
-
-    .setFooter(`Requested by | ${msg.author.tag}`);
-
-    msg.delete().catch(O_o=>{})
-
-    msg.channel.send(embed);
-
-    }
-
-});
-
-/////////////////////////
-
-////////////////////////
-
-//////////////////////
-
-client.on('message', async msg =>{
-
-	if (msg.author.bot) return undefined;
-
-    if (!msg.content.startsWith(prefix)) return undefined;
-
-    
-
-    let args = msg.content.split(' ');
-
-
-
-	let command = msg.content.toLowerCase().split(" ")[0];
-
-	command = command.slice(prefix.length)
-
-
-
-    if(command === `avatar`){
-
-	if(msg.channel.type === 'dm') return msg.channel.send("Nope Nope!! u can't use avatar command in DMs (:")
-
-        let mentions = msg.mentions.members.first()
-
-        if(!mentions) {
-
-          let sicon = msg.author.avatarURL
-
-          let embed = new Discord.RichEmbed()
-
-          .setImage(msg.author.avatarURL)
-
-          .setColor("#5074b3")
-
-          msg.channel.send({embed})
-
-        } else {
-
-          let sicon = mentions.user.avatarURL
-
-          let embed = new Discord.RichEmbed()
-
-          .setColor("#5074b3")
-
-          .setImage(sicon)
-
-          msg.channel.send({embed})
-
-        }
-
-    };
-
-});
-
-/////////////////////////
-
-////////////////////////
-
-//////////////////////
-
-/////////////////////////
-
-////////////////////////
-
-//////////////////////
-
-
-
-/////////////////////////
-
-////////////////////////
-
-//////////////////////
-
-/////////////////////////
-
-////////////////////////
-
-//////////////////////
-
-client.on('message', async msg => { 
-
-	if (msg.author.bot) return undefined;
-
-    if (!msg.content.startsWith(prefix)) return undefined;
-
-    
-
-    const args = msg.content.split(' ');
-
-	const searchString = args.slice(1).join(' ');
-
-    
-
-	const url = args[1] ? args[1].replace(/<(.+)>/g, '$1') : '';
-
-	const serverQueue = queue.get(msg.guild.id);
-
-
-
-	let command = msg.content.toLowerCase().split(" ")[0];
-
-	command = command.slice(prefix.length)
-
-
-
-	if (command === `play`) {
-
-		const voiceChannel = msg.member.voiceChannel;
-
-        
-
-        if (!voiceChannel) return msg.channel.send("I can't find you in any voice channel!");
-
-        
-
-        const permissions = voiceChannel.permissionsFor(msg.client.user);
-
-        
-
-        if (!permissions.has('CONNECT')) {
-
-
-
-			return msg.channel.send("I don't have enough permissions to join your voice channel!");
-
-        }
-
-        
-
-		if (!permissions.has('SPEAK')) {
-
-
-
-			return msg.channel.send("I don't have enough permissions to speak in your voice channel!");
-
-		}
-
-
-
-		if (!permissions.has('EMBED_LINKS')) {
-
-
-
-			return msg.channel.sendMessage("I don't have enough permissions to insert a URLs!")
-
-		}
-
-
-
-		if (url.match(/^https?:\/\/(www.youtube.com|youtube.com)\/playlist(.*)$/)) {
-
-
-
-			const playlist = await youtube.getPlaylist(url);
-
-            const videos = await playlist.getVideos();
-
-            
-
-
-
-			for (const video of Object.values(videos)) {
-
-                
-
-                const video2 = await youtube.getVideoByID(video.id); 
-
-                await handleVideo(video2, msg, voiceChannel, true); 
-
-            }
-
-			return msg.channel.send(`**${playlist.title}**, Just added to the queue!`);
-
-		} else {
-
-
-
-			try {
-
-
-
-                var video = await youtube.getVideo(url);
-
-                
-
-			} catch (error) {
-
-				try {
-
-
-
-					var videos = await youtube.searchVideos(searchString, 5);
-
-					let index = 0;
-
-                    const embed1 = new Discord.RichEmbed()
-
-                    .setTitle(":mag_right:  YouTube Search Results :")
-
-                    .setDescription(`
-
-                    ${videos.map(video2 => `${++index}. **${video2.title}**`).join('\n')}`)
-
-                    
-
-					.setColor("#f7abab")
-
-					msg.channel.sendEmbed(embed1).then(message =>{message.delete(20000)})
-
-					
-
-/////////////////					
-
-					try {
-
-
-
-						var response = await msg.channel.awaitMessages(msg2 => msg2.content > 0 && msg2.content < 11, {
-
-							maxMatches: 1,
-
-							time: 15000,
-
-							errors: ['time']
-
-						});
-
-					} catch (err) {
-
-						console.error(err);
-
-						return msg.channel.send('No one respone a number!!');
-
-                    }
-
-                    
-
-					const videoIndex = parseInt(response.first().content);
-
-                    var video = await youtube.getVideoByID(videos[videoIndex - 1].id);
-
-                    
-
-				} catch (err) {
-
-
-
-					console.error(err);
-
-					return msg.channel.send("I didn't find any results!");
-
-				}
-
-			}
-
-
-
-            return handleVideo(video, msg, voiceChannel);
-
-            
-
-        }
-
-        
-
-	} else if (command === `skip`) {
-
-
-
-		if (!msg.member.voiceChannel) return msg.channel.send("You Must be in a Voice channel to Run the Music commands!");
-
-        if (!serverQueue) return msg.channel.send("There is no Queue to skip!!");
-
-
-
-		serverQueue.connection.dispatcher.end('Ok, skipped!');
-
-        return undefined;
-
-        
-
-	} else if (command === `stop`) {
-
-
-
-		if (!msg.member.voiceChannel) return msg.channel.send("You Must be in a Voice channel to Run the Music commands!");
-
-        if (!serverQueue) return msg.channel.send("There is no Queue to stop!!");
-
-        
-
-		serverQueue.songs = [];
-
-		serverQueue.connection.dispatcher.end('Ok, stopped & disconnected from your Voice channel');
-
-        return undefined;
-
-        
-
-	} else if (command === `vol`) {
-
-
-
-		if (!msg.member.voiceChannel) return msg.channel.send("You Must be in a Voice channel to Run the Music commands!");
-
-		if (!serverQueue) return msg.channel.send('You only can use this command while music is playing!');
-
-        if (!args[1]) return msg.channel.send(`The bot volume is **${serverQueue.volume}**`);
-
-        
-
-		serverQueue.volume = args[1];
-
-        serverQueue.connection.dispatcher.setVolumeLogarithmic(args[1] / 50);
-
-        
-
-        return msg.channel.send(`Volume Now is **${args[1]}**`);
-
-
-
-	} else if (command === `np`) {
-
-
-
-		if (!serverQueue) return msg.channel.send('There is no Queue!');
-
-		const embedNP = new Discord.RichEmbed()
-
-	    .setDescription(`Now playing **${serverQueue.songs[0].title}**`)
-
-        return msg.channel.sendEmbed(embedNP);
-
-        
-
-	} else if (command === `queue`) {
-
-		
-
-		if (!serverQueue) return msg.channel.send('There is no Queue!!');
-
-		let index = 0;
-
-//	//	//
-
-		const embedqu = new Discord.RichEmbed()
-
-        .setTitle("The Queue Songs :")
-
-        .setDescription(`
-
-        ${serverQueue.songs.map(song => `${++index}. **${song.title}**`).join('\n')}
-
-**Now playing :** **${serverQueue.songs[0].title}**`)
-
-        .setColor("#f7abab")
-
-		return msg.channel.sendEmbed(embedqu);
-
-	} else if (command === `pause`) {
-
-		if (serverQueue && serverQueue.playing) {
-
-			serverQueue.playing = false;
-
-			serverQueue.connection.dispatcher.pause();
-
-			return msg.channel.send('Ok, paused');
-
-		}
-
-		return msg.channel.send('There is no Queue to Pause!');
-
-	} else if (command === "resume") {
-
-
-
-		if (serverQueue && !serverQueue.playing) {
-
-			serverQueue.playing = true;
-
-			serverQueue.connection.dispatcher.resume();
-
-            return msg.channel.send('Ok, resumed!');
-
-            
-
-		}
-
-		return msg.channel.send('Queue is empty!');
-
-	}
-
-
-
-	return undefined;
-
-});
-
-
-
-async function handleVideo(video, msg, voiceChannel, playlist = false) {
-
-	const serverQueue = queue.get(msg.guild.id);
-
-	console.log(video);
-
-	
-
-
-
-	const song = {
-
-		id: video.id,
-
-		title: Util.escapeMarkdown(video.title),
-
-		url: `https://www.youtube.com/watch?v=${video.id}`
-
-	};
-
-	if (!serverQueue) {
-
-		const queueConstruct = {
-
-			textChannel: msg.channel,
-
-			voiceChannel: voiceChannel,
-
-			connection: null,
-
-			songs: [],
-
-			volume: 5,
-
-			playing: true
-
-		};
-
-		queue.set(msg.guild.id, queueConstruct);
-
-
-
-		queueConstruct.songs.push(song);
-
-
-
-		try {
-
-			var connection = await voiceChannel.join();
-
-			queueConstruct.connection = connection;
-
-			play(msg.guild, queueConstruct.songs[0]);
-
-		} catch (error) {
-
-			console.error(`I could not join the voice channel: ${error}!`);
-
-			queue.delete(msg.guild.id);
-
-			return msg.channel.send(`Can't join this channel: ${error}!`);
-
-		}
-
-	} else {
-
-		serverQueue.songs.push(song);
-
-		console.log(serverQueue.songs);
-
-		if (playlist) return undefined;
-
-		else return msg.channel.send(`**${song.title}**, just added to the queue! `);
-
-	} 
-
-	return undefined;
-
-}
-
-
-
-function play(guild, song) {
-
-	const serverQueue = queue.get(guild.id);
-
-
-
-	if (!song) {
-
-		serverQueue.voiceChannel.leave();
-
-		queue.delete(guild.id);
-
-		return;
-
-	}
-
-	console.log(serverQueue.songs);
-
-
-
-	const dispatcher = serverQueue.connection.playStream(ytdl(song.url))
-
-		.on('end', reason => {
-
-			if (reason === 'Stream is not generating quickly enough.') console.log('Song ended.');
-
-			else console.log(reason);
-
-			serverQueue.songs.shift();
-
-			play(guild, serverQueue.songs[0]);
-
-		})
-
-		.on('error', error => console.error(error));
-
-	dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-
-
-
-	serverQueue.textChannel.send(`**${song.title}**, is now playing!`);
-
-}
-
-
-
-
-
-client.on('message', message => {
-
-    if (message.content === 'help') {
-
-        let helpEmbed = new Discord.RichEmbed()
-
-        .setTitle('**أوامر الميوزك...**')
-
-        .setDescription('**برفكس البوت (!)**')
-
-        .addField('play', 'لتشغيل اغنية')
-
-        .addField('join', 'دخول رومك الصوتي')
-
-        .addField('disconnect', 'الخروج من رومك الصوتي')
-
-        .addField('skip', 'تخطي الأغنية')
-
-        .addField('pause', 'ايقاف الاغنية مؤقتا')
-
-        .addField('resume', 'تكملة الاغنية')
-
-        .addField('queue', 'اظهار قائمة التشغيل')
-
-        .addField('np', 'اظهار الاغنية اللي انت مشغلها حاليا')
-
-        .setFooter('(general_commands) لاظهار الاوامر العامة')
-
-      message.channel.send(helpEmbed);
-
-    }
-
-});
-
-
-
-client.on('message', message => {
-
-    if (message.content === 'general_commands') {
-
-        let helpEmbed = new Discord.RichEmbed()
-
-        .setTitle('**أوامر عامة...**')
-
-        .addField('avatar', "افاتار الشخص المطلوب")
-
-        .addField('gif', 'البحث عن جيف انت تطلبه')
-
-        .addField('ping', 'معرفة ping البوت')
-
-        .setFooter('المزيد قريبا ان شاء الله!')
-
-      message.channel.send(helpEmbed);
-
-    }
-
-});
-
-
-
-client.login(process.env.BOT_TOKEN);
-
+; DON'T OPEN THIS FILE WITH NOTEPAD.  If you don't have a preferred text editor, use notepad++ or any other modern text editor.
+;
+; If you edit example_options.ini, Save-As options.ini
+;
+; This is the main configuration file for MusicBot.  You will need to edit this file when you setup the bot.
+; The bot must be restarted for edits to take effect, but a reload command will be created in the future.
+; Currently the bot does not overwrite any settings, but this may change in a future update.
+
+
+; HOW TO GET VARIOUS IDS:
+; http://i.imgur.com/GhKpBMQ.gif
+; Enable developer mode (options, settings, appearance), right click the object you want the id of, and click Copy ID
+; This works for basically everything you would want the id of (channels and users).  For roles you have to right click a role mention.
+
+
+[Credentials]
+; Put your token here.  Not "secret".  The secret is not the token.
+Token = NDc5ODYwMzQyMTI2ODA1MDAz.Dlw_Ww.h-6vuHLKY7CT82DBXhMMCGikm08
+; If you want to use a normal user account instead of a bot account, use these lines instead.
+; Comment the token line and uncomment the Email/Password lines.
+;Email = bot_discord@email
+;Password = bot_discord_password
+
+[Permissions]
+; This number should be your id.  It gives you full permissions.  You do not put the bot's id here.  That's silly.
+; If you don't know how to get this, scroll up a bit and read the part that says "HOW TO GET VARIOUS IDS"
+; If you can't do that for some reason, join the help server (invite in the readme) and type this in chat: !id
+; If you still don't understand, watch this https://streamable.com/4w8e and may your respective deity have mercy on your soul.
+; I don't want any more "how do I get the OwnerID" questions.
+OwnerID = 296995862180265984
+
+[Chat]
+; Change this if you don't want commands to trigger another bot
+; Example:
+;	CommandPrefix = *
+; This means the commands you use in chat are *play, *skip, etc.  This explanation exists because it seems no one knows what "prefix" means.
+; You do not list commands here.  You do not put "CommandPrefix = *play *queue *np *skip *clear..." etc.  R e a d i n g   c o m p r e h e n s i o n.
+CommandPrefix = M
+
+; Restrict the bot to only listen to certain text channels.  Uncomment (remove the ; at the start of the line) and add channel IDs to enable.
+; An id looks like this number: 41771983423143930
+; To get a channel id, enable Developer Mode in discord (settings, appearance), right click a channel, and click Copy ID.
+; Example: BindToChannels = 41000000000000005 41000000000000007
+; (Don't use these ids, they won't work)
+; This next line is the one you uncomment to use the option:
+;
+;BindToChannels =
+;
+
+; Join a channel on startup.  Multiple channels can be added for multiple servers. Remember, use IDs, not names.
+; If both this option and AutoSummon are enabled, this option takes priority.
+;
+;AutojoinChannels =
+;
+
+[MusicBot]
+; The starting volume of the bot.  You can use any value from 0.01 to 1.0 but 0.15 is probably fine
+DefaultVolume = 0.15
+
+; Only allow whitelisted users to use commands
+; Deprecated in favor of permissions
+WhiteListCheck = no
+
+; Skips required to skip a song.  Whichever is lower will be used.
+; Skip ratio refers to the percent of non-deafened, non-owner users
+; in the voice channel needed to skip a song.
+SkipsRequired = 4
+SkipRatio = 0.5
+
+; If no, delete videos after they've played, if the video
+; isn't still in the queue, to avoid redownloading it.
+SaveVideos = yes
+
+; Mentions the user who queued a song when the song plays.
+NowPlayingMentions = no
+
+; On start up, if the owner is in a voice channel, join that channel.
+AutoSummon = yes
+
+; Play random songs when nothing is queued.
+UseAutoPlaylist = yes
+
+; When no one else is in the voice channel, pause the music, and resume when someone joins again.
+AutoPause = yes
+
+; Automatically delete messages the bot sends after some time.
+DeleteMessages = yes
+
+; Delete the invoking message when DeleteMessages is enabled.  Does nothing when DeleteMessages is disabled.
+; Note the bot must have Manage Messages permission in the channel to delete other messages.
+DeleteInvoking = no
+
+; Prints extra output in the console and some errors to chat.
+; This option is a work in progress, don't expect much.  You might as well just leave it on for now.
+DebugMode = no
