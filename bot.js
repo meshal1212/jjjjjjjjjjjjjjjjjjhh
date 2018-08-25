@@ -42,7 +42,7 @@ const client = new Discord.Client({disableEveryone: true});
 
 
 
-const prefix = "AT";
+const prefix = "M";
 
 /////////////////////////
 
